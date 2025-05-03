@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zakłady dla znajomych</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .panel { display: none; padding: 20px; border: 1px solid #ccc; margin: 10px; }
+        .match { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        button { margin: 5px; padding: 5px 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        #changePasswordForm { display: none; margin: 20px 0; }
+        .bet-status { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- Formularz logowania -->
+    <div id="loginForm">
+        <h2>Zaloguj się</h2>
+        <input type="text" id="username" placeholder="Login">
+        <input type="password" id="password" placeholder="Hasło">
+        <button onclick="login()">Zaloguj</button>
+    </div>
+
+    <!-- Formularz zmiany hasła -->
+    <div id="changePasswordForm" class="panel">
+        <h2>Ustaw nowe hasło</h2>
+        <input type="password" id="newPassword" placeholder="Nowe hasło">
+        <input type="password" id="confirmPassword" placeholder="Potwierdź hasło">
+        <button onclick="changePassword()">Zapisz hasło</button>
+    </div>
+
+    <!-- Panel użytkownika -->
+    <div id="userPanel" class="panel">
+        <h2>Witaj <span id="currentUser"></span>! (Punkty: <span id="userPoints">0</span>)</h2>
+        <button onclick="logout()">Wyloguj</button>
+        
+        <h3>Nadchodzące mecze:</h3>
+        <div id="upcomingMatches"></div>
+        
+        <h3>Twoje zakłady:</h3>
+        <div id="yourBets"></div>
+        
+        <h3>Ranking:</h3>
+        <table id="rankingTable">
+            <tr><th>Miejsce</th><th>Użytkownik</th><th>Punkty</th></tr>
+        </table>
+    </div>
+
+    <!-- Panel administratora -->
+    <div id="adminPanel" class="panel">
+        <h2>Panel administratora</h2>
+        <button onclick="logout()">Wyloguj</button>
+        
+        <h3>Dodaj nowy mecz:</h3>
+        <div>
+            <input type="text" id="newTeam1" placeholder="Drużyna 1">
+            vs
+            <input type="text" id="newTeam2" placeholder="Drużyna 2">
+            <button onclick="addNewMatch()">Dodaj mecz</button>
+        </div>
+        
+        <h3>Rozstrzygnij mecze:</h3>
+        <div id="adminMatches"></div>
+    </div>
+
+<script>
+// Inicjalizacja danych
+let users = JSON.parse(localStorage.getItem('users')) || [];
+let matches = JSON.parse(localStorage.getItem('matches')) || [];
+let currentUser = null;
+
+// Drużyny dostępne do obstawiania
+const availableTeams = ['Hazardziści', 'Menele', 'Baranki', 'Degeneraci'];
+
+function initializeData() {
+    if (users.length === 0) {
+        // Tworzenie 20 użytkowników z tymczasowym hasłem
+        for (let i = 1; i <= 20; i++) {
+            users.push({
+                username: `User${i}`,
+                password: 'user123',
+                passwordChanged: false,
+                points: 0,
+                bets: []
+            });
+        }
+        // Dodawanie admina
+        users.push({
+            username: 'admin',
+            password: 'Cwel123',
+            isAdmin: true,
+            passwordChanged: true
+        });
+        localStorage.setItem('users', JSON.stringify(users));
+    }
+
+    if (matches.length === 0) {
+        // Generowanie przykładowych meczów
+        for (let i = 1; i <= 5; i++) {
+            const team1 = availableTeams[Math.floor(Math.random() * availableTeams.length)];
+            let team2;
+            do {
+                team2 = availableTeams[Math.floor(Math.random() * availableTeams.length)];
+            } while (team2 === team1);
+            
+            matches.push({
+                id: Date.now() + i,
+                team1: team1,
+                team2: team2,
+                date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                resolved: false,
+                winner: null
+            });
+        }
+        localStorage.setItem('matches', JSON.stringify(matches));
+    }
+}
+
+function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    const user = users.find(u => u.username === username && u.password === password);
+    
+    if (user) {
+        currentUser = user;
+        
+        if (!user.isAdmin && !user.passwordChanged) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('changePasswordForm').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('changePasswordForm').style.display = 'none';
+        
+        if (user.isAdmin) {
+            document.getElementById('adminPanel').style.display = 'block';
+            showAdminMatches();
+        } else {
+            document.getElementById('userPanel').style.display = 'block';
+            document.getElementById('currentUser').textContent = user.username;
+            document.getElementById('userPoints').textContent = user.points;
+            showUpcomingMatches();
+            showUserBets();
+            updateRanking();
+        }
+    } else {
+        alert('Błędny login lub hasło!');
+    }
+}
+
+function changePassword() {
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword !== confirmPassword) {
+        alert('Hasła nie są identyczne!');
+        return;
+    }
+    
+    if (newPassword.length < 4) {
+        alert('Hasło musi mieć co najmniej 4 znaki!');
+        return;
+    }
+    
+    currentUser.password = newPassword;
+    currentUser.passwordChanged = true;
+    
+    localStorage.setItem('users', JSON.stringify(users));
+    
+    document.getElementById('changePasswordForm').style.display = 'none';
+    document.getElementById('userPanel').style.display = 'block';
+    document.getElementById('currentUser').textContent = currentUser.username;
+    document.getElementById('userPoints').textContent = currentUser.points;
+    showUpcomingMatches();
+    showUserBets();
+    updateRanking();
+}
+
+function logout() {
+    currentUser = null;
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('userPanel').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('changePasswordForm').style.display = 'none';
+    document.getElementById('password').value = '';
+}
+
+// Funkcje dla użytkownika
+function showUpcomingMatches() {
+    const matchesDiv = document.getElementById('upcomingMatches');
+    matchesDiv.innerHTML = '';
+    
+    const upcomingMatches = matches.filter(match => !match.resolved);
+    
+    if (upcomingMatches.length === 0) {
+        matchesDiv.innerHTML = '<p>Brak nadchodzących meczów</p>';
+        return;
+    }
+    
+    upcomingMatches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'match';
+        div.innerHTML = `
+            <h4>${match.team1} vs ${match.team2} (${match.date})</h4>
+            <button onclick="placeBet(${match.id}, '${match.team1}')">Obstaw ${match.team1}</button>
+            <button onclick="placeBet(${match.id}, '${match.team2}')">Obstaw ${match.team2}</button>
+        `;
+        matchesDiv.appendChild(div);
+    });
+}
+
+function showUserBets() {
+    const betsDiv = document.getElementById('yourBets');
+    betsDiv.innerHTML = '';
+    
+    if (currentUser.bets.length === 0) {
+        betsDiv.innerHTML = '<p>Nie masz jeszcze żadnych zakładów</p>';
+        return;
+    }
+    
+    currentUser.bets.forEach(bet => {
+        const match = matches.find(m => m.id === bet.matchId);
+        if (!match) return;
+        
+        const div = document.createElement('div');
+        div.className = 'match';
+        
+        let status = '';
+        if (match.resolved) {
+            if (match.winner === bet.team) {
+                status = '<span class="bet-status">(WYGRANY +1 punkt)</span>';
+            } else {
+                status = '<span>(PRZEGRANY)</span>';
+            }
+        } else {
+            status = '<span>(OCZEKIWANIE)</span>';
+        }
+        
+        div.innerHTML = `
+            <p>${match.team1} vs ${match.team2} (${match.date})</p>
+            <p>Twój zakład: ${bet.team} ${status}</p>
+        `;
+        betsDiv.appendChild(div);
+    });
+}
+
+function placeBet(matchId, team) {
+    // Sprawdź czy użytkownik już obstawił ten mecz
+    const existingBet = currentUser.bets.find(bet => bet.matchId === matchId);
+    
+    if (existingBet) {
+        if (confirm(`Już obstawiłeś ten mecz na ${existingBet.team}. Czy chcesz zmienić zakład na ${team}?`)) {
+            existingBet.team = team;
+        } else {
+            return;
+        }
+    } else {
+        currentUser.bets.push({ matchId, team });
+    }
+    
+    localStorage.setItem('users', JSON.stringify(users));
+    showUserBets();
+    alert(`Zakład na ${team} został ${existingBet ? 'zmieniony' : 'dodany'}!`);
+}
+
+function updateRanking() {
+    const sortedUsers = [...users]
+        .filter(u => !u.isAdmin)
+        .sort((a, b) => b.points - a.points);
+    
+    const table = document.getElementById('rankingTable');
+    table.innerHTML = `<tr><th>Miejsce</th><th>Użytkownik</th><th>Punkty</th></tr>`;
+    
+    sortedUsers.forEach((user, index) => {
+        const row = table.insertRow();
+        const isCurrentUser = user.username === currentUser.username;
+        const rowStyle = isCurrentUser ? 'background-color: #e6f7ff; font-weight: bold;' : '';
+        row.style = rowStyle;
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${user.username} ${isCurrentUser ? '(Ty)' : ''}</td>
+            <td>${user.points}</td>
+        `;
+    });
+}
+
+// Funkcje dla administratora
+function showAdminMatches() {
+    const adminMatchesDiv = document.getElementById('adminMatches');
+    adminMatchesDiv.innerHTML = '';
+    
+    if (matches.length === 0) {
+        adminMatchesDiv.innerHTML = '<p>Brak meczów do rozstrzygnięcia</p>';
+        return;
+    }
+    
+    matches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'match';
+        
+        if (match.resolved) {
+            div.innerHTML = `
+                <h4>${match.team1} vs ${match.team2} (${match.date})</h4>
+                <p>Rozstrzygnięty: Zwycięzca - ${match.winner}</p>
+            `;
+        } else {
+            div.innerHTML = `
+                <h4>${match.team1} vs ${match.team2} (${match.date})</h4>
+                <select id="select-${match.id}">
+                    <option value="">-- Wybierz zwycięzcę --</option>
+                    <option value="${match.team1}">${match.team1}</option>
+                    <option value="${match.team2}">${match.team2}</option>
+                </select>
+                <button onclick="resolveMatch(${match.id})">Rozstrzygnij</button>
+                <button onclick="deleteMatch(${match.id})" style="background-color: #ffcccc;">Usuń mecz</button>
+            `;
+        }
+        adminMatchesDiv.appendChild(div);
+    });
+}
+
+function addNewMatch() {
+    const team1 = document.getElementById('newTeam1').value;
+    const team2 = document.getElementById('newTeam2').value;
+    
+    if (!team1 || !team2) {
+        alert('Wprowadź nazwy obu drużyn!');
+        return;
+    }
+    
+    if (team1 === team2) {
+        alert('Drużyny nie mogą być takie same!');
+        return;
+    }
+    
+    const newMatch = {
+        id: Date.now(),
+        team1: team1,
+        team2: team2,
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        resolved: false,
+        winner: null
+    };
+    
+    matches.push(newMatch);
+    localStorage.setItem('matches', JSON.stringify(matches));
+    
+    document.getElementById('newTeam1').value = '';
+    document.getElementById('newTeam2').value = '';
+    
+    showAdminMatches();
+    alert('Mecz dodany pomyślnie!');
+}
+
+function resolveMatch(matchId) {
+    const match = matches.find(m => m.id === matchId);
+    const winner = document.getElementById(`select-${matchId}`).value;
+    
+    if (!winner) {
+        alert('Wybierz zwycięzcę!');
+        return;
+    }
+    
+    match.resolved = true;
+    match.winner = winner;
+    
+    // Aktualizacja punktów użytkowników
+    users.forEach(user => {
+        if (user.bets) {
+            user.bets.forEach(bet => {
+                if (bet.matchId === matchId && bet.team === winner) {
+                    user.points = (user.points || 0) + 1;
+                }
+            });
+        }
+    });
+    
+    localStorage.setItem('matches', JSON.stringify(matches));
+    localStorage.setItem('users', JSON.stringify(users));
+    showAdminMatches();
+    alert('Mecz rozstrzygnięty! Punkty zostały przyznane.');
+}
+
+function deleteMatch(matchId) {
+    if (confirm('Czy na pewno chcesz usunąć ten mecz? Wszystkie zakłady związane z tym meczem zostaną utracone.')) {
+        matches = matches.filter(m => m.id !== matchId);
+        localStorage.setItem('matches', JSON.stringify(matches));
+        
+        // Usuń zakłady związane z tym meczem
+        users.forEach(user => {
+            if (user.bets) {
+                user.bets = user.bets.filter(bet => bet.matchId !== matchId);
+            }
+        });
+        localStorage.setItem('users', JSON.stringify(users));
+        
+        showAdminMatches();
+        alert('Mecz został usunięty!');
+    }
+}
+
+// Inicjalizacja przy pierwszym uruchomieniu
+initializeData();
+</script>
+</body>
+</html>
