@@ -58,52 +58,43 @@
     </div>
 
 <script>
+// Dane użytkowników z ustalonymi hasłami
+const usersData = [
+    { username: 'admin', password: 'Cwel123', isAdmin: true },
+    { username: 'User1', password: 'a7b9c3', points: 0, bets: [] },
+    { username: 'User2', password: 'd4e8f2', points: 0, bets: [] },
+    { username: 'User3', password: 'g5h1j6', points: 0, bets: [] },
+    { username: 'User4', password: 'k8l2m9', points: 0, bets: [] },
+    { username: 'User5', password: 'n3o7p0', points: 0, bets: [] },
+    { username: 'User6', password: 'q1r4s5', points: 0, bets: [] },
+    { username: 'User7', password: 't6u2v8', points: 0, bets: [] },
+    { username: 'User8', password: 'w9x3y7', points: 0, bets: [] },
+    { username: 'User9', password: 'z0a1b2', points: 0, bets: [] },
+    { username: 'User10', password: 'c3d4e5', points: 0, bets: [] },
+    { username: 'User11', password: 'f6g7h8', points: 0, bets: [] },
+    { username: 'User12', password: 'i9j0k1', points: 0, bets: [] },
+    { username: 'User13', password: 'l2m3n4', points: 0, bets: [] },
+    { username: 'User14', password: 'o5p6q7', points: 0, bets: [] },
+    { username: 'User15', password: 'r8s9t0', points: 0, bets: [] },
+    { username: 'User16', password: 'u1v2w3', points: 0, bets: [] },
+    { username: 'User17', password: 'x4y5z6', points: 0, bets: [] },
+    { username: 'User18', password: 'a7b8c9', points: 0, bets: [] },
+    { username: 'User19', password: 'd0e1f2', points: 0, bets: [] },
+    { username: 'User20', password: 'g3h4i5', points: 0, bets: [] }
+];
+
 // Inicjalizacja danych
-let users = JSON.parse(localStorage.getItem('users')) || [];
+let users = JSON.parse(localStorage.getItem('users')) || usersData;
 let matches = JSON.parse(localStorage.getItem('matches')) || [];
 let currentUser = null;
 
 // Drużyny dostępne do obstawiania
 const availableTeams = ['Hazardziści', 'Menele', 'Baranki', 'Degeneraci'];
 
-// Generowanie losowych haseł 6-znakowych
-function generatePassword() {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
-    for (let i = 0; i < 6; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-}
-
 function initializeData() {
     if (users.length === 0) {
-        // Tworzenie 20 użytkowników z losowymi hasłami
-        const passwords = {};
-        for (let i = 1; i <= 20; i++) {
-            const password = generatePassword();
-            passwords[`User${i}`] = password;
-            
-            users.push({
-                username: `User${i}`,
-                password: password,
-                points: 0,
-                bets: []
-            });
-        }
-        
-        // Dodawanie admina
-        users.push({
-            username: 'admin',
-            password: 'Cwel123',
-            isAdmin: true
-        });
-        
+        users = [...usersData];
         localStorage.setItem('users', JSON.stringify(users));
-        
-        // Wyświetl loginy i hasła w konsoli dla testów
-        console.log('Wygenerowane loginy i hasła:');
-        console.table(passwords);
     }
 
     if (matches.length === 0) {
