@@ -12,6 +12,7 @@
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #4CAF50; color: white; }
         .bet-status { color: green; font-weight: bold; }
+        .admin-buttons { margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -45,6 +46,15 @@
         <h2>Panel administratora</h2>
         <button onclick="logout()">Wyloguj</button>
         
+        <div class="admin-buttons">
+            <button onclick="resetRanking()" style="background-color: #ffcccc;">Resetuj ranking</button>
+        </div>
+        
+        <h3>Ranking:</h3>
+        <table id="adminRankingTable">
+            <tr><th>Miejsce</th><th>Użytkownik</th><th>Punkty</th></tr>
+        </table>
+        
         <h3>Dodaj nowy mecz:</h3>
         <div>
             <input type="text" id="newTeam1" placeholder="Drużyna 1">
@@ -58,7 +68,7 @@
     </div>
 
 <script>
-// Stałe dane użytkowników
+// Stałe dane użytkowników z losowymi hasłami
 const DEFAULT_USERS = [
     { username: 'admin', password: 'Cwel123', isAdmin: true, points: 0, bets: [] },
     { username: 'User1', password: 'a7b9c3', points: 0, bets: [] },
@@ -93,7 +103,7 @@ const availableTeams = ['Hazardziści', 'Menele', 'Baranki', 'Degeneraci'];
 
 function initializeData() {
     // Sprawdzamy czy użytkownicy w localStorage są zgodni z domyślnymi
-    if (users.length !== DEFAULT_USERS.length) {
+    if (!localStorage.getItem('users') || users.length !== DEFAULT_USERS.length) {
         users = [...DEFAULT_USERS];
         localStorage.setItem('users', JSON.stringify(users));
     }
@@ -119,8 +129,6 @@ function initializeData() {
     }
 }
 
-// Reszta funkcji pozostaje bez zmian (login, logout, showUpcomingMatches, showUserBets, placeBet, updateRanking, showAdminMatches, addNewMatch, resolveMatch, deleteMatch)
-
 function login() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
@@ -134,6 +142,7 @@ function login() {
         if (user.isAdmin) {
             document.getElementById('adminPanel').style.display = 'block';
             showAdminMatches();
+            updateAdminRanking();
         } else {
             document.getElementById('userPanel').style.display = 'block';
             document.getElementById('currentUser').textContent = user.username;
@@ -252,6 +261,44 @@ function updateRanking() {
     });
 }
 
+function updateAdminRanking() {
+    const sortedUsers = [...users]
+        .filter(u => !u.isAdmin)
+        .sort((a, b) => b.points - a.points);
+    
+    const table = document.getElementById('adminRankingTable');
+    table.innerHTML = `<tr><th>Miejsce</th><th>Użytkownik</th><th>Punkty</th></tr>`;
+    
+    sortedUsers.forEach((user, index) => {
+        const row = table.insertRow();
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${user.username}</td>
+            <td>${user.points}</td>
+        `;
+    });
+}
+
+function resetRanking() {
+    if (confirm('Czy na pewno chcesz zresetować ranking? Wszystkie punkty zostaną wyzerowane!')) {
+        users.forEach(user => {
+            user.points = 0;
+            user.bets = [];
+        });
+        
+        matches.forEach(match => {
+            match.resolved = false;
+            match.winner = null;
+        });
+        
+        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem('matches', JSON.stringify(matches));
+        
+        updateAdminRanking();
+        alert('Ranking został zresetowany!');
+    }
+}
+
 function showAdminMatches() {
     const adminMatchesDiv = document.getElementById('adminMatches');
     adminMatchesDiv.innerHTML = '';
@@ -343,6 +390,7 @@ function resolveMatch(matchId) {
     localStorage.setItem('matches', JSON.stringify(matches));
     localStorage.setItem('users', JSON.stringify(users));
     showAdminMatches();
+    updateAdminRanking();
     alert('Mecz rozstrzygnięty! Punkty zostały przyznane.');
 }
 
