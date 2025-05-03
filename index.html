@@ -68,29 +68,29 @@
     </div>
 
 <script>
-// Stałe dane użytkowników z losowymi hasłami
+// Stałe dane użytkowników z indywidualnymi hasłami
 const DEFAULT_USERS = [
     { username: 'admin', password: 'Cwel123', isAdmin: true, points: 0, bets: [] },
-    { username: 'User1', password: 'a7b9c3', points: 0, bets: [] },
-    { username: 'User2', password: 'd4e8f2', points: 0, bets: [] },
-    { username: 'User3', password: 'g5h1j6', points: 0, bets: [] },
-    { username: 'User4', password: 'k8l2m9', points: 0, bets: [] },
-    { username: 'User5', password: 'n3o7p0', points: 0, bets: [] },
-    { username: 'User6', password: 'q1r4s5', points: 0, bets: [] },
-    { username: 'User7', password: 't6u2v8', points: 0, bets: [] },
-    { username: 'User8', password: 'w9x3y7', points: 0, bets: [] },
-    { username: 'User9', password: 'z0a1b2', points: 0, bets: [] },
-    { username: 'User10', password: 'c3d4e5', points: 0, bets: [] },
-    { username: 'User11', password: 'f6g7h8', points: 0, bets: [] },
-    { username: 'User12', password: 'i9j0k1', points: 0, bets: [] },
-    { username: 'User13', password: 'l2m3n4', points: 0, bets: [] },
-    { username: 'User14', password: 'o5p6q7', points: 0, bets: [] },
-    { username: 'User15', password: 'r8s9t0', points: 0, bets: [] },
-    { username: 'User16', password: 'u1v2w3', points: 0, bets: [] },
-    { username: 'User17', password: 'x4y5z6', points: 0, bets: [] },
-    { username: 'User18', password: 'a7b8c9', points: 0, bets: [] },
-    { username: 'User19', password: 'd0e1f2', points: 0, bets: [] },
-    { username: 'User20', password: 'g3h4i5', points: 0, bets: [] }
+    { username: 'User1', password: 'KacperToFaja', points: 0, bets: [] },
+    { username: 'User2', password: 'KryhaHin', points: 0, bets: [] },
+    { username: 'User3', password: 'Hazard11', points: 0, bets: [] },
+    { username: 'User4', password: 'CyrylCukrzyk', points: 0, bets: [] },
+    { username: 'User5', password: 'DzisiajWin', points: 0, bets: [] },
+    { username: 'User6', password: 'Dzordzo5', points: 0, bets: [] },
+    { username: 'User7', password: 'NieWiem590', points: 0, bets: [] },
+    { username: 'User8', password: 'BaranekBozy', points: 0, bets: [] },
+    { username: 'User9', password: 'Beeeka11', points: 0, bets: [] },
+    { username: 'User10', password: 'PiwoPiwo1', points: 0, bets: [] },
+    { username: 'User11', password: 'WutkaJakubaM', points: 0, bets: [] },
+    { username: 'User12', password: 'CwelicCukrzykuf', points: 0, bets: [] },
+    { username: 'User13', password: 'MessiToCwel', points: 0, bets: [] },
+    { username: 'User14', password: 'RonaldoToCwel', points: 0, bets: [] },
+    { username: 'User15', password: 'LewyGOAT', points: 0, bets: [] },
+    { username: 'User16', password: 'StarWars', points: 0, bets: [] },
+    { username: 'User17', password: 'BarankiBoze1', points: 0, bets: [] },
+    { username: 'User18', password: 'Automaty5', points: 0, bets: [] },
+    { username: 'User19', password: 'Cweloza55', points: 0, bets: [] },
+    { username: 'User20', password: 'User21', points: 0, bets: [] }
 ];
 
 // Inicjalizacja danych
@@ -128,6 +128,8 @@ function initializeData() {
         localStorage.setItem('matches', JSON.stringify(matches));
     }
 }
+
+// Reszta funkcji pozostaje bez zmian (login, logout, showUpcomingMatches, showUserBets, placeBet, updateRanking, updateAdminRanking, resetRanking, showAdminMatches, addNewMatch, resolveMatch, deleteMatch)
 
 function login() {
     const username = document.getElementById('username').value;
