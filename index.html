@@ -58,9 +58,9 @@
     </div>
 
 <script>
-// Dane użytkowników z ustalonymi hasłami
-const usersData = [
-    { username: 'admin', password: 'Cwel123', isAdmin: true },
+// Stałe dane użytkowników
+const DEFAULT_USERS = [
+    { username: 'admin', password: 'Cwel123', isAdmin: true, points: 0, bets: [] },
     { username: 'User1', password: 'a7b9c3', points: 0, bets: [] },
     { username: 'User2', password: 'd4e8f2', points: 0, bets: [] },
     { username: 'User3', password: 'g5h1j6', points: 0, bets: [] },
@@ -84,7 +84,7 @@ const usersData = [
 ];
 
 // Inicjalizacja danych
-let users = JSON.parse(localStorage.getItem('users')) || usersData;
+let users = JSON.parse(localStorage.getItem('users')) || [...DEFAULT_USERS];
 let matches = JSON.parse(localStorage.getItem('matches')) || [];
 let currentUser = null;
 
@@ -92,8 +92,9 @@ let currentUser = null;
 const availableTeams = ['Hazardziści', 'Menele', 'Baranki', 'Degeneraci'];
 
 function initializeData() {
-    if (users.length === 0) {
-        users = [...usersData];
+    // Sprawdzamy czy użytkownicy w localStorage są zgodni z domyślnymi
+    if (users.length !== DEFAULT_USERS.length) {
+        users = [...DEFAULT_USERS];
         localStorage.setItem('users', JSON.stringify(users));
     }
 
@@ -117,6 +118,8 @@ function initializeData() {
         localStorage.setItem('matches', JSON.stringify(matches));
     }
 }
+
+// Reszta funkcji pozostaje bez zmian (login, logout, showUpcomingMatches, showUserBets, placeBet, updateRanking, showAdminMatches, addNewMatch, resolveMatch, deleteMatch)
 
 function login() {
     const username = document.getElementById('username').value;
@@ -152,7 +155,6 @@ function logout() {
     document.getElementById('password').value = '';
 }
 
-// Funkcje dla użytkownika
 function showUpcomingMatches() {
     const matchesDiv = document.getElementById('upcomingMatches');
     matchesDiv.innerHTML = '';
@@ -250,7 +252,6 @@ function updateRanking() {
     });
 }
 
-// Funkcje dla administratora
 function showAdminMatches() {
     const adminMatchesDiv = document.getElementById('adminMatches');
     adminMatchesDiv.innerHTML = '';
