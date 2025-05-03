@@ -11,7 +11,6 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #4CAF50; color: white; }
-        #changePasswordForm { display: none; margin: 20px 0; }
         .bet-status { color: green; font-weight: bold; }
     </style>
 </head>
@@ -22,14 +21,6 @@
         <input type="text" id="username" placeholder="Login">
         <input type="password" id="password" placeholder="Hasło">
         <button onclick="login()">Zaloguj</button>
-    </div>
-
-    <!-- Formularz zmiany hasła -->
-    <div id="changePasswordForm" class="panel">
-        <h2>Ustaw nowe hasło</h2>
-        <input type="password" id="newPassword" placeholder="Nowe hasło">
-        <input type="password" id="confirmPassword" placeholder="Potwierdź hasło">
-        <button onclick="changePassword()">Zapisz hasło</button>
     </div>
 
     <!-- Panel użytkownika -->
@@ -75,26 +66,44 @@ let currentUser = null;
 // Drużyny dostępne do obstawiania
 const availableTeams = ['Hazardziści', 'Menele', 'Baranki', 'Degeneraci'];
 
+// Generowanie losowych haseł 6-znakowych
+function generatePassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 6; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
 function initializeData() {
     if (users.length === 0) {
-        // Tworzenie 20 użytkowników z tymczasowym hasłem
+        // Tworzenie 20 użytkowników z losowymi hasłami
+        const passwords = {};
         for (let i = 1; i <= 20; i++) {
+            const password = generatePassword();
+            passwords[`User${i}`] = password;
+            
             users.push({
                 username: `User${i}`,
-                password: 'user123',
-                passwordChanged: false,
+                password: password,
                 points: 0,
                 bets: []
             });
         }
+        
         // Dodawanie admina
         users.push({
             username: 'admin',
             password: 'Cwel123',
-            isAdmin: true,
-            passwordChanged: true
+            isAdmin: true
         });
+        
         localStorage.setItem('users', JSON.stringify(users));
+        
+        // Wyświetl loginy i hasła w konsoli dla testów
+        console.log('Wygenerowane loginy i hasła:');
+        console.table(passwords);
     }
 
     if (matches.length === 0) {
@@ -110,7 +119,6 @@ function initializeData() {
                 id: Date.now() + i,
                 team1: team1,
                 team2: team2,
-                date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toLocaleDateString(),
                 resolved: false,
                 winner: null
             });
@@ -127,15 +135,7 @@ function login() {
     
     if (user) {
         currentUser = user;
-        
-        if (!user.isAdmin && !user.passwordChanged) {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('changePasswordForm').style.display = 'block';
-            return;
-        }
-
         document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('changePasswordForm').style.display = 'none';
         
         if (user.isAdmin) {
             document.getElementById('adminPanel').style.display = 'block';
@@ -153,40 +153,11 @@ function login() {
     }
 }
 
-function changePassword() {
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    if (newPassword !== confirmPassword) {
-        alert('Hasła nie są identyczne!');
-        return;
-    }
-    
-    if (newPassword.length < 4) {
-        alert('Hasło musi mieć co najmniej 4 znaki!');
-        return;
-    }
-    
-    currentUser.password = newPassword;
-    currentUser.passwordChanged = true;
-    
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    document.getElementById('changePasswordForm').style.display = 'none';
-    document.getElementById('userPanel').style.display = 'block';
-    document.getElementById('currentUser').textContent = currentUser.username;
-    document.getElementById('userPoints').textContent = currentUser.points;
-    showUpcomingMatches();
-    showUserBets();
-    updateRanking();
-}
-
 function logout() {
     currentUser = null;
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('userPanel').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('changePasswordForm').style.display = 'none';
     document.getElementById('password').value = '';
 }
 
@@ -206,7 +177,7 @@ function showUpcomingMatches() {
         const div = document.createElement('div');
         div.className = 'match';
         div.innerHTML = `
-            <h4>${match.team1} vs ${match.team2} (${match.date})</h4>
+            <h4>${match.team1} vs ${match.team2}</h4>
             <button onclick="placeBet(${match.id}, '${match.team1}')">Obstaw ${match.team1}</button>
             <button onclick="placeBet(${match.id}, '${match.team2}')">Obstaw ${match.team2}</button>
         `;
@@ -242,7 +213,7 @@ function showUserBets() {
         }
         
         div.innerHTML = `
-            <p>${match.team1} vs ${match.team2} (${match.date})</p>
+            <p>${match.team1} vs ${match.team2}</p>
             <p>Twój zakład: ${bet.team} ${status}</p>
         `;
         betsDiv.appendChild(div);
@@ -250,7 +221,6 @@ function showUserBets() {
 }
 
 function placeBet(matchId, team) {
-    // Sprawdź czy użytkownik już obstawił ten mecz
     const existingBet = currentUser.bets.find(bet => bet.matchId === matchId);
     
     if (existingBet) {
@@ -305,12 +275,12 @@ function showAdminMatches() {
         
         if (match.resolved) {
             div.innerHTML = `
-                <h4>${match.team1} vs ${match.team2} (${match.date})</h4>
+                <h4>${match.team1} vs ${match.team2}</h4>
                 <p>Rozstrzygnięty: Zwycięzca - ${match.winner}</p>
             `;
         } else {
             div.innerHTML = `
-                <h4>${match.team1} vs ${match.team2} (${match.date})</h4>
+                <h4>${match.team1} vs ${match.team2}</h4>
                 <select id="select-${match.id}">
                     <option value="">-- Wybierz zwycięzcę --</option>
                     <option value="${match.team1}">${match.team1}</option>
@@ -342,7 +312,6 @@ function addNewMatch() {
         id: Date.now(),
         team1: team1,
         team2: team2,
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
         resolved: false,
         winner: null
     };
@@ -369,7 +338,6 @@ function resolveMatch(matchId) {
     match.resolved = true;
     match.winner = winner;
     
-    // Aktualizacja punktów użytkowników
     users.forEach(user => {
         if (user.bets) {
             user.bets.forEach(bet => {
@@ -391,7 +359,6 @@ function deleteMatch(matchId) {
         matches = matches.filter(m => m.id !== matchId);
         localStorage.setItem('matches', JSON.stringify(matches));
         
-        // Usuń zakłady związane z tym meczem
         users.forEach(user => {
             if (user.bets) {
                 user.bets = user.bets.filter(bet => bet.matchId !== matchId);
